@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      padding: 1.5rem;
+    }
+    h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.25rem; }
+    h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: #333; }
+    h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.4rem; color: #555; }
+    .subtitle { font-size: 0.85rem; color: #666; margin-bottom: 1.5rem; }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    /* Health summary grid */
+    .health-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+    .health-card {
+      text-align: center;
+      padding: 0.75rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    .health-number { font-size: 2.2rem; font-weight: 700; line-height: 1; }
+    .health-label { font-size: 0.75rem; color: #666; margin-top: 0.3rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .num-ok      { color: #1a7f37; }
+    .num-warn    { color: #9a6700; }
+    .num-crit    { color: #cf222e; }
+    .num-neutral { color: #0969da; }
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .badge-success  { background: #d1f0d4; color: #1a7f37; }
+    .badge-error    { background: #ffdcdc; color: #cf222e; }
+    .badge-warn     { background: #fff0b3; color: #9a6700; }
+    .badge-skipped  { background: #e8e8e8; color: #555; }
+    .badge-ok       { background: #d1f0d4; color: #1a7f37; }
+    .badge-warning  { background: #fff0b3; color: #9a6700; }
+    .badge-critical { background: #ffdcdc; color: #cf222e; }
+    .badge-info     { background: #dff0ff; color: #0550ae; }
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    thead th {
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      background: #f6f8fa;
+      border-bottom: 2px solid #e1e4e8;
+      font-weight: 600;
+      font-size: 0.8rem;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    tbody td {
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid #eee;
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #f9fbff; }
+    .no-data { color: #888; font-style: italic; }
+    /* Charts */
+    .chart-wrap { overflow-x: auto; margin-bottom: 0.5rem; }
+    .chart-model-group { margin-bottom: 1.5rem; }
+    .chart-model-group:last-child { margin-bottom: 0; }
+  </style>
+</head>
+<body>
+
+  <h1>ELT Observability Dashboard</h1>
+  <p class="subtitle">Generated at {{ generated_at }} &nbsp;|&nbsp; {{ title }}</p>
+
+  <!-- ── Section 1: Health Summary ─────────────────────────────── -->
+  <div class="card">
+    <h2>Pipeline Health (last 24h)</h2>
+    <div class="health-grid">
+      <div class="health-card">
+        <div class="health-number num-neutral">{{ health.total_models }}</div>
+        <div class="health-label">Models tracked</div>
+      </div>
+      <div class="health-card">
+        <div class="health-number num-neutral">{{ health.total_events }}</div>
+        <div class="health-label">Events</div>
+      </div>
+      <div class="health-card">
+        <div class="health-number num-warn">{{ health.warning_count }}</div>
+        <div class="health-label">Warnings</div>
+      </div>
+      <div class="health-card">
+        <div class="health-number num-crit">{{ health.critical_count }}</div>
+        <div class="health-label">Critical alerts</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 2: Per-model SLA table ────────────────────────── -->
+  <div class="card">
+    <h2>Model SLA Status</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Last Run</th>
+          <th>Status</th>
+          <th>Rows</th>
+          <th>Exec Time</th>
+          <th>Freshness SLA</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in models %}
+        <tr>
+          <td><code>{{ m.name }}</code></td>
+          <td>{{ m.last_run }}</td>
+          <td><span class="badge badge-{{ m.status | lower }}">{{ m.status }}</span></td>
+          <td>{{ m.rows | int | string | replace(",", "") }}</td>
+          <td>{{ "%.2f"|format(m.exec_ms / 1000) }}s</td>
+          <td><span class="badge badge-{{ m.sla_status | lower }}">{{ m.sla_status }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="no-data">No model data available</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Section 3: Execution time trend (top 5 slowest) ───────── -->
+  {% if charts %}
+  <div class="card">
+    <h2>Top 5 Slowest Models — Execution Time Trend</h2>
+    {% for chart in charts %}
+    <div class="chart-model-group">
+      <h4>{{ chart.model_name }}</h4>
+      <div class="chart-wrap">
+        {{ chart.svg_markup | safe }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ── Section 4: Open alerts ────────────────────────────────── -->
+  <div class="card">
+    <h2>Open Alerts</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Type</th>
+          <th>Severity</th>
+          <th>Description</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in alerts %}
+        <tr>
+          <td><code>{{ a.model_name }}</code></td>
+          <td>{{ a.alert_type }}</td>
+          <td><span class="badge badge-{{ a.severity | lower }}">{{ a.severity }}</span></td>
+          <td>{{ a.description }}</td>
+          <td>{{ a.created_at }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="no-data">No open alerts — all clear!</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</body>
+</html>
