@@ -105,7 +105,7 @@ open_alerts = store.get_open_alerts()
 DashboardGenerator().generate(events, open_alerts, "output/dashboard.html")
 ```
 
-Open `output/dashboard.html` in any browser — no server required.
+Open `output/dashboard.html` in any browser; no server required.
 
 ---
 
@@ -206,7 +206,7 @@ Triggers when:
 - `rows_affected == 0` AND
 - `mean(historical_rows) > min_expected_rows` (default 100)
 
-Severity is always **CRITICAL** — silent failures are the most dangerous class of data quality incident.
+Severity is always **CRITICAL**, as silent failures are the most dangerous class of data quality incident.
 
 ---
 
